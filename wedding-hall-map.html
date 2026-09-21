@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웨딩홀 지도</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@600;700&display=swap">
+<style>
+  :root {
+    --paper: #f6f3f6; --surface: #ffffff; --surface-alt: #efe9ef;
+    --ink: #2b2430; --muted: #756a78; --line: #e1dae2;
+    --accent: #7a3b4e; --accent-tint: #f1e1e6;
+    --sage: #4f7a58; --sage-tint: #e5efe6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    font-size: 14px; line-height: 1.5;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 18px 60px; }
+  h1 {
+    font-family: "Noto Serif KR", serif; font-size: 22px; margin: 0 0 4px;
+  }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: 13px; }
+
+  #map {
+    width: 100%; height: 480px; border-radius: 12px;
+    border: 1px solid var(--line); margin-bottom: 16px;
+  }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 10px 14px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; margin-bottom: 18px;
+  }
+  .glabel { font-size: 11.5px; color: var(--muted); margin-right: 2px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--surface-alt); color: var(--ink);
+    font: inherit; font-size: 12px; font-weight: 500; padding: 5px 11px;
+    border-radius: 999px; cursor: pointer;
+  }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .gu-section { margin-bottom: 22px; }
+  .gu-section-head {
+    display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;
+    padding-bottom: 6px; border-bottom: 2px solid var(--line);
+  }
+  .gu-section-head h3 { font-family: "Noto Serif KR", serif; font-size: 16px; margin: 0; }
+  .count-tag {
+    font-size: 11px; font-weight: 600; color: var(--accent);
+    background: var(--accent-tint); padding: 2px 8px; border-radius: 999px;
+  }
+
+  .card-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px;
+  }
+  .venue-card {
+    border: 1px solid var(--line); border-radius: 10px; padding: 13px;
+    background: var(--surface); cursor: pointer; transition: border-color .12s ease;
+  }
+  .venue-card:hover, .venue-card.highlight { border-color: var(--accent); }
+  .venue-card .vname { font-weight: 700; font-size: 14px; }
+  .venue-card .vstation { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+  .venue-card .rental { font-weight: 700; font-size: 15px; }
+  .venue-card .meal { font-size: 11.5px; color: var(--muted); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px;
+    font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-top: 6px;
+  }
+  .badge.bright { background: var(--sage-tint); color: var(--sage); }
+  .badge.dark { background: var(--accent-tint); color: var(--accent); }
+
+  .info-window {
+    padding: 10px 12px; font-family: "Noto Sans KR", sans-serif; min-width: 180px;
+  }
+  .info-window .iname { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+  .info-window .istation { font-size: 11px; color: #756a78; margin-bottom: 6px; }
+  .info-window .iprice { font-size: 13px; font-weight: 700; color: #7a3b4e; }
+  .info-window .imeal { font-size: 11px; color: #756a78; }
+
+  footer { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>웨딩홀 지도</h1>
+  <p class="sub">구별로 저장한 웨딩홀 19곳의 실제 위치입니다. 좌표는 지하철역 기준 근사치예요. 목록 카드를 클릭하면 지도에서 해당 위치로 이동합니다.</p>
+
+  <div id="map"></div>
+
+  <div class="controls">
+    <span class="glabel">구</span>
+    <div id="guChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    <span class="glabel" style="margin-left:8px;">분위기</span>
+    <div id="moodChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+  </div>
+
+  <div id="listRoot"></div>
+  <footer>대관료는 만원 단위, 식대는 1인 기준입니다. 위치는 정확한 주소가 아닌 인근 지하철역 기준 근사 좌표입니다.</footer>
+</div>
+
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a298ea8e3d65c49fc3da442d1dbc72d1"></script>
+<script>
+  const venues = [
+    { name: "더컨벤션 신사", gu: "강남구", station: "신사역", mood: "어두움", meal: "뷔페", rental: 16500000, mealCost: 160000, lat: 37.5163, lng: 127.0203 },
+    { name: "메종드아나하", gu: "송파구", station: "역삼역", mood: "어두움", meal: "뷔페", rental: 15500000, mealCost: 150000, lat: 37.5006, lng: 127.0364 },
+    { name: "웨스턴베니비스 영등포", gu: "영등포구", station: "영등포구청역", mood: "어두움", meal: "뷔페", rental: 14300000, mealCost: 95000, lat: 37.5247, lng: 126.8957 },
+    { name: "까사그랑데", gu: "광진구", station: "건대입구역", mood: "밝음", meal: "뷔페", rental: 12000000, mealCost: 110000, lat: 37.5406, lng: 127.0700 },
+    { name: "더컨벤션 잠실", gu: "송파구", station: "잠실역", mood: "어두움", meal: "뷔페", rental: 11500000, mealCost: 80000, lat: 37.5137, lng: 127.1005 },
+    { name: "세이트메리엘", gu: "강남구", station: "강남역", mood: "어두움", meal: "뷔페", rental: 9800000, mealCost: 85000, lat: 37.4979, lng: 127.0276 },
+    { name: "서울웨딩타워", gu: "송파구", station: "가락시장역", mood: "어두움", meal: "뷔페", rental: 8000000, mealCost: 90000, lat: 37.4926, lng: 127.1183 },
+    { name: "더컨벤션 반포", gu: "서초구", station: "신반포역", mood: "어두움", meal: "뷔페", rental: 8000000, mealCost: 85000, lat: 37.5058, lng: 127.0090 },
+    { name: "더채플앳청담", gu: "강남구", station: "강남구청역", mood: "밝음", meal: "뷔페", rental: 8000000, mealCost: 95000, lat: 37.5168, lng: 127.0409 },
+    { name: "더컨벤션 영등포", gu: "영등포구", station: "영등포구청역", mood: "어두움", meal: "뷔페", rental: 7500000, mealCost: 80000, lat: 37.5255, lng: 126.8965 },
+    { name: "아펠가모 공덕", gu: "마포구", station: "공덕역", mood: "밝음", meal: "뷔페", rental: 7000000, mealCost: 85000, lat: 37.5445, lng: 126.9516 },
+    { name: "아펠가모 반포", gu: "서초구", station: "고속터미널역", mood: "밝음", meal: "뷔페", rental: 7000000, mealCost: 85000, lat: 37.5048, lng: 127.0046 },
+    { name: "더화이트베일", gu: "서초구", station: "남부터미널역", mood: "어두움", meal: "코스", rental: 7000000, mealCost: 80000, lat: 37.4855, lng: 127.0154 },
+    { name: "PJ호텔", gu: "중구", station: "을지로4가역", mood: "어두움", meal: "뷔페", rental: 7000000, mealCost: 80000, lat: 37.5663, lng: 127.0090 },
+    { name: "JK아트컨벤션", gu: "영등포구", station: "문래역", mood: "어두움", meal: "뷔페", rental: 7000000, mealCost: 75000, lat: 37.5177, lng: 126.8955 },
+    { name: "루벨 (LUVEL)", gu: "강동구", station: "강동역", mood: "밝음", meal: "뷔페", rental: 6000000, mealCost: 75000, lat: 37.5301, lng: 127.1238 },
+    { name: "이랜드 크루즈", gu: "영등포구", station: "여의나루역", mood: "밝음", meal: "뷔페", rental: 6000000, mealCost: 90000, lat: 37.5269, lng: 126.9328 },
+    { name: "더베네치아", gu: "송파구", station: "잠실역", mood: "어두움", meal: "뷔페", rental: 6000000, mealCost: 70000, lat: 37.5129, lng: 127.0997 },
+    { name: "라온제나 강남", gu: "강남구", station: "강남구청역", mood: "밝음", meal: "뷔페", rental: 6000000, mealCost: 75000, lat: 37.5176, lng: 127.0417 },
+  ];
+
+  const manwon = n => (n / 10000).toLocaleString("ko-KR") + "만원";
+  const won = n => "₩" + n.toLocaleString("ko-KR");
+
+  const state = { gu: null, mood: "전체" };
+  const markers = [];
+  let activeInfoWindow = null;
+
+  const container = document.getElementById("map");
+  const map = new kakao.maps.Map(container, {
+    center: new kakao.maps.LatLng(37.515, 127.02),
+    level: 8,
+  });
+
+  venues.forEach(v => {
+    const pos = new kakao.maps.LatLng(v.lat, v.lng);
+    const marker = new kakao.maps.Marker({ position: pos, map });
+    const info = new kakao.maps.InfoWindow({
+      content: `
+        <div class="info-window">
+          <div class="iname">${v.name}</div>
+          <div class="istation">${v.gu} · ${v.station}</div>
+          <div class="iprice">${manwon(v.rental)} <span class="imeal">/ 대관료</span></div>
+          <div class="imeal">식대 ${won(v.mealCost)} · ${v.meal}</div>
+        </div>`,
+    });
+    kakao.maps.event.addListener(marker, "click", () => {
+      if (activeInfoWindow) activeInfoWindow.close();
+      info.open(map, marker);
+      activeInfoWindow = info;
+      map.panTo(pos);
+    });
+    markers.push({ v, marker, info });
+  });
+
+  function focusVenue(v) {
+    const found = markers.find(m => m.v === v);
+    if (!found) return;
+    if (activeInfoWindow) activeInfoWindow.close();
+    found.info.open(map, found.marker);
+    activeInfoWindow = found.info;
+    map.setLevel(5);
+    map.panTo(found.marker.getPosition());
+  }
+
+  function renderControls() {
+    const gus = [...new Set(venues.map(v => v.gu))];
+    document.getElementById("guChips").innerHTML =
+      [["전체", null], ...gus.map(g => [g, g])].map(([label, val]) => `
+        <button class="chip ${state.gu === val ? "active" : ""}" data-gu="${val ?? ""}">${label}</button>
+      `).join("");
+    document.getElementById("moodChips").innerHTML =
+      ["전체", "밝음", "어두움"].map(m => `<button class="chip ${state.mood === m ? "active" : ""}" data-mood="${m}">${m}</button>`).join("");
+
+    document.querySelectorAll("[data-gu]").forEach(btn => btn.onclick = () => { state.gu = btn.dataset.gu || null; renderAll(); });
+    document.querySelectorAll("[data-mood]").forEach(btn => btn.onclick = () => { state.mood = btn.dataset.mood; renderAll(); });
+  }
+
+  function renderList() {
+    const filtered = venues.filter(v =>
+      (!state.gu || v.gu === state.gu) && (state.mood === "전체" || v.mood === state.mood)
+    );
+    const byGu = {};
+    filtered.forEach(v => (byGu[v.gu] ||= []).push(v));
+    const gus = Object.keys(byGu);
+    const root = document.getElementById("listRoot");
+    if (!gus.length) { root.innerHTML = `<p style="color:var(--muted);">조건에 맞는 웨딩홀이 없습니다.</p>`; return; }
+
+    root.innerHTML = gus.map(gu => `
+      <div class="gu-section">
+        <div class="gu-section-head">
+          <h3>${gu}</h3><span class="count-tag">${byGu[gu].length}곳</span>
+        </div>
+        <div class="card-grid">
+          ${byGu[gu].map(v => `
+            <div class="venue-card" data-name="${v.name}">
+              <div class="vname">${v.name}</div>
+              <div class="vstation">${v.station}</div>
+              <div class="rental">${manwon(v.rental)}</div>
+              <div class="meal">식대 ${won(v.mealCost)} · ${v.meal}</div>
+              <span class="badge ${v.mood === "밝음" ? "bright" : "dark"}">${v.mood}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `).join("");
+
+    root.querySelectorAll(".venue-card").forEach(card => {
+      card.onclick = () => {
+        const v = venues.find(x => x.name === card.dataset.name);
+        focusVenue(v);
+      };
+    });
+
+    markers.forEach(({ marker, v }) => {
+      const show = (!state.gu || v.gu === state.gu) && (state.mood === "전체" || v.mood === state.mood);
+      marker.setMap(show ? map : null);
+    });
+  }
+
+  function renderAll() { renderControls(); renderList(); }
+  renderAll();
+</script>
+</body>
+</html>
