@@ -36,13 +36,24 @@
 <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a298ea8e3d65c49fc3da442d1dbc72d1&libraries=services"></script>
 <script>
 /*
-  노션 데이터를 갱신할 때 아래 venues 배열의 동일한 속성을 수정하세요.
-  image와 photos에는 직접 촬영하거나 사용 허가를 받은 이미지 URL만 입력하는 것을 권장합니다.
+  이 페이지는 구글 시트("예식장 리스트" 탭)를 CSV로 읽어와 venues를 채웁니다.
+  시트를 불러오지 못할 때만 아래 FALLBACK_VENUES(마지막 확인 스냅샷)를 사용합니다.
+  시트 공유는 "링크가 있는 모든 사용자 - 뷰어"여야 합니다.
 */
+const SHEET_ID = '1rltS0Ql48mFnGMPYnJY41RDVZQaVqd4MN5BRu2tpbqc';
+const SHEET_TAB = '예식장 리스트';
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_TAB)}`;
+
+// 노션/시트에는 없는 정보라 여기서 직접 관리하는 역 → 호선 매핑표
+const STATION_LINES={"신사역":["3호선","신분당선"],"역삼역":["2호선"],"영등포구청역":["2호선","5호선"],"건대입구역":["2호선","7호선"],"잠실역":["2호선","8호선"],"강남역":["2호선","신분당선"],"가락시장역":["3호선","8호선"],"신반포역":["9호선"],"강남구청역":["7호선","수인분당선"],"공덕역":["5호선","6호선","경의중앙선","공항철도"],"고속터미널역":["3호선","7호선","9호선"],"남부터미널역":["3호선"],"을지로4가역":["2호선","5호선"],"문래역":["2호선"],"강동역":["5호선"]};
 const LINES={"1호선":["#0052A4","1"],"2호선":["#00A84D","2"],"3호선":["#EF7C1C","3"],"4호선":["#00A5DE","4"],"5호선":["#996CAC","5"],"6호선":["#CD7C2F","6"],"7호선":["#747F00","7"],"8호선":["#E6186C","8"],"9호선":["#BDB092","9"],"신분당선":["#D4003B","신분당"],"경의중앙선":["#77C4A3","경의중앙"],"공항철도":["#0090D2","공항철도"],"수인분당선":["#FABE00","수인분당"]};
-const venues=[
-{name:"더컨벤션 신사",gu:"강남구",station:"신사역",lines:["3호선","신분당선"],address:"서울 강남구 강남대로 652",mood:"어두움",meal:"뷔페",rental:16500000,mealCost:160000,parking:236,times:["11:00","12:30","14:00","15:30","17:00"],guarantee:300,capacity:null,interval:90,status:"조사 중"},
-{name:"메종드아나하",gu:"송파구",station:"역삼역",lines:["2호선"],address:"서울 강남구 언주로 517",mood:"어두움",meal:"뷔페",rental:15500000,mealCost:150000,parking:500,times:["11:00","12:30","14:00","15:30","17:00","18:30"],guarantee:300,capacity:null,interval:90,status:"조사 중"},
+
+function withDefaults(list){return list.map(v=>({times:[],capacity:null,status:"조사 중",walkMinutes:null,shuttle:null,parkingFree:null,exclusiveHall:null,simultaneousWeddings:null,mealRating:null,pros:[],cautions:[],memo:"",lastChecked:null,officialUrl:null,phone:null,image:null,photos:[],preference:"",...v}));}
+
+// 시트를 못 불러올 때만 쓰는 마지막 확인 스냅샷
+const FALLBACK_VENUES=withDefaults([
+{name:"더컨벤션 신사",gu:"강남구",station:"신사역",lines:["3호선","신분당선"],address:"서울 강남구 강남대로 652",mood:"어두움",meal:"뷔페",rental:16500000,mealCost:160000,parking:236,times:["11:00","12:30","14:00","15:30","17:00"],guarantee:300,interval:90},
+{name:"메종드아나하",gu:"송파구",station:"역삼역",lines:["2호선"],address:"서울 강남구 언주로 517",mood:"어두움",meal:"뷔페",rental:15500000,mealCost:150000,parking:500,times:["11:00","12:30","14:00","15:30","17:00","18:30"],guarantee:300,interval:90},
 {name:"웨스턴베니비스 영등포",gu:"영등포구",station:"영등포구청역",lines:["2호선","5호선"],address:"서울 영등포구 국회대로 558",mood:"어두움",meal:"뷔페",rental:14300000,mealCost:95000,parking:540,guarantee:250,interval:90},
 {name:"까사그랑데",gu:"광진구",station:"건대입구역",lines:["2호선","7호선"],address:"서울 광진구 능동로 87",mood:"밝음",meal:"뷔페",rental:12000000,mealCost:110000,parking:400,guarantee:250,interval:90},
 {name:"더컨벤션 잠실",gu:"송파구",station:"잠실역",lines:["2호선","8호선"],address:"서울 송파구 올림픽로 319",mood:"어두움",meal:"뷔페",rental:11500000,mealCost:80000,parking:500,guarantee:250,interval:90},
@@ -58,11 +69,52 @@ const venues=[
 {name:"JK아트컨벤션",gu:"영등포구",station:"문래역",lines:["2호선"],address:"서울 영등포구 문래로 164",mood:"어두움",meal:"뷔페",rental:7000000,mealCost:75000,parking:600,guarantee:200,interval:90},
 {name:"루벨",gu:"강동구",station:"강동역",lines:["5호선"],address:"서울 강동구 천호대로 1077",mood:"밝음",meal:"뷔페",rental:6000000,mealCost:75000,parking:400,guarantee:200,interval:90},
 {name:"더베네치아",gu:"송파구",station:"잠실역",lines:["2호선","8호선"],address:"서울 송파구 올림픽로35다길 42",mood:"어두움",meal:"뷔페",rental:6000000,mealCost:70000,parking:500,guarantee:200,interval:70},
-{name:"라온제나 강남",gu:"강남구",station:"강남구청역",lines:["7호선","수인분당선"],address:"서울 강남구 학동로47길 5",mood:"밝음",meal:"뷔페",rental:6000000,mealCost:75000,parking:400,guarantee:200,interval:90}
-].map(v=>({times:[],capacity:null,status:"조사 중",walkMinutes:null,shuttle:null,parkingFree:null,exclusiveHall:null,simultaneousWeddings:null,mealRating:null,pros:[],cautions:[],memo:"",lastChecked:null,officialUrl:null,phone:null,image:null,photos:[],...v}));
+{name:"라온제나 강남",gu:"강남구",station:"강남구청역",lines:["7호선","수인분당선"],address:"서울 강남구 학동로47길 5",mood:"밝음",meal:"뷔페",rental:6000000,mealCost:75000,parking:400,guarantee:200,interval:90},
+]);
+
+// ---- CSV 파싱 (따옴표로 감싼 콤마/줄바꿈까지 처리) ----
+function parseCsv(text){
+  const rows=[];let row=[],field="",inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i],next=text[i+1];
+    if(inQuotes){
+      if(c==='"'&&next==='"'){field+='"';i++;}
+      else if(c==='"'){inQuotes=false;}
+      else field+=c;
+    }else if(c==='"')inQuotes=true;
+    else if(c===','){row.push(field);field="";}
+    else if(c==='\r'){/* skip */}
+    else if(c==='\n'){row.push(field);rows.push(row);row=[];field="";}
+    else field+=c;
+  }
+  if(field.length||row.length){row.push(field);rows.push(row);}
+  return rows.filter(r=>r.some(cell=>cell!==""));
+}
+
+function csvRowsToVenues(rows){
+  if(!rows.length)return [];
+  const header=rows[0],col=name=>header.indexOf(name);
+  const iName=col("이름"),iGu=col("위치"),iStation=col("지하철"),iMood=col("홀분위기"),iMeal=col("식사 형태"),iRental=col("대관료"),iMealCost=col("식대"),iParking=col("주차대수"),iTimes=col("예식 시간"),iGuarantee=col("보증 인원"),iInterval=col("예식 간격"),iPref=col("선호도"),iPros=col("장점"),iAddress=col("주소");
+  const num=raw=>{const s=String(raw??"").trim();if(!s)return null;const n=Number(s.replace(/[^0-9.-]/g,""));return Number.isFinite(n)?n:null;};
+  return rows.slice(1).filter(r=>(r[iName]||"").trim()).map(r=>{
+    const station=(r[iStation]||"").trim();
+    return{
+      name:(r[iName]||"").trim(),gu:(r[iGu]||"").trim(),station,
+      lines:STATION_LINES[station]||[],
+      address:(r[iAddress]||"").trim(),mood:(r[iMood]||"").trim(),meal:(r[iMeal]||"").trim(),
+      rental:num(r[iRental])||0,mealCost:num(r[iMealCost])||0,parking:num(r[iParking]),
+      times:(r[iTimes]||"").split(",").map(s=>s.trim()).filter(Boolean),
+      guarantee:num(r[iGuarantee])||0,interval:num(r[iInterval])||0,
+      preference:(r[iPref]||"").trim(),
+      pros:(r[iPros]||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean),
+    };
+  });
+}
+
 const fmt=n=>n==null?"확인 필요":n.toLocaleString("ko-KR")+"원";const short=n=>n==null?"확인 필요":(n/10000).toLocaleString("ko-KR")+"만원";const val=v=>(v===null||v===undefined||v===""?"확인 필요":v);const yesno=v=>v==null?"확인 필요":v?"예":"아니오";
+let venues=FALLBACK_VENUES;
 let guestCount=250;const estimate=v=>v.rental+v.mealCost*Math.max(guestCount,v.guarantee);const appliedGuests=v=>Math.max(guestCount,v.guarantee);
-const state={gu:null,mood:"전체",interval:"전체",guarantee:"전체"};const selected=new Set();let markerEntries=[],activeInfo=null;
+const state={gu:null,mood:"전체",interval:"전체",guarantee:"전체"};const selected=new Set();let markerEntries=[],activeInfo=null,map=null;
 const lineBadge=ln=>{const [c,l]=LINES[ln]||["#888",ln];return `<span class="line" style="background:${c}">${l}</span>`};
 function matches(v){return(!state.gu||v.gu===state.gu)&&(state.mood==="전체"||v.mood===state.mood)&&(state.interval==="전체"||v.interval===+state.interval)&&(state.guarantee==="전체"||v.guarantee===+state.guarantee)}
 function renderKpis(){const filtered=venues.filter(matches),costs=filtered.map(estimate);document.getElementById("kpis").innerHTML=[["조건에 맞는 홀",filtered.length+"곳"],["비교함",selected.size+"곳"],["예상 비용 범위",costs.length?`${short(Math.min(...costs))} ~ ${short(Math.max(...costs))}`:"-"],["계산 기준",guestCount+"명"]].map(x=>`<div class="kpi"><p class="klabel">${x[0]}</p><p class="kvalue">${x[1]}</p></div>`).join("")}
@@ -72,15 +124,53 @@ function card(v){return `<article class="card"><div class="thumb ${v.image?"":"e
 function renderList(){const f=venues.filter(matches),groups={};f.forEach(v=>(groups[v.gu]??=[]).push(v));const root=document.getElementById("listRoot");root.innerHTML=Object.keys(groups).length?Object.entries(groups).map(([gu,vs])=>`<section class="section"><div class="section-head"><h2>${gu}</h2><span class="count">${vs.length}곳</span></div><div class="grid">${vs.map(card).join("")}</div></section>`).join(""):`<div class="empty-note">조건에 맞는 웨딩홀이 없습니다.</div>`;root.querySelectorAll(".detail-btn").forEach(b=>b.onclick=()=>openDetail(venues.find(v=>v.name===b.dataset.name)));root.querySelectorAll(".compare-btn").forEach(b=>b.onclick=()=>toggleCompare(b.dataset.name));applyMarkerVisibility()}
 function gallery(v){const arr=[v.image,...v.photos].filter(Boolean).slice(0,5);return `<div class="detail-gallery">${[0,1,2,3,4].map((_,i)=>`<div class="gallery-item">${arr[i]?`<img src="${arr[i]}" alt="${v.name} 사진 ${i+1}">`:`사진 ${i+1} 준비 중`}</div>`).join("")}</div>`}
 function fact(label,value){return `<div class="fact"><span>${label}</span><span>${value}</span></div>`}
-function openDetail(v){const d=document.getElementById("detailDialog");d.innerHTML=`<div class="modal-head"><div><h2 id="detailTitle">${v.name}</h2><div class="source-note">${v.address}</div></div><button class="close" data-close="detailModal" aria-label="닫기">×</button></div>${gallery(v)}<div class="detail-body"><div class="summary-grid">${[["예상 비용",short(estimate(v))],["대관료",short(v.rental)],["식대",fmt(v.mealCost)],["보증 인원",v.guarantee+"명"],["역 접근",v.walkMinutes?`도보 ${v.walkMinutes}분`:"확인 필요"],["주차",v.parking?v.parking+"대":"확인 필요"],["예식 간격",v.interval+"분"],["홀 운영",v.exclusiveHall==null?"확인 필요":v.exclusiveHall?"단독홀":"복수홀"]].map(x=>`<div class="summary"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join("")}</div><section class="detail-section"><h3>비용 및 계약 기준</h3><div class="facts">${fact("예상 비용 산식",`${short(v.rental)} + ${fmt(v.mealCost)} × ${appliedGuests(v)}명`)}${fact("옵션 포함 여부","필수·선택 옵션 제외")}${fact("최소 보증 인원",v.guarantee+"명")}${fact("최대 수용 인원",v.capacity?v.capacity+"명":"확인 필요")}${fact("최근 확인일",val(v.lastChecked))}${fact("예식 시간",v.times.length?v.times.join(", "):"확인 필요")}</div></section><section class="detail-section"><h3>교통·주차·운영</h3><div class="facts">${fact("지하철",v.lines.join(", ")+" · "+v.station)}${fact("역 도보",v.walkMinutes?v.walkMinutes+"분":"확인 필요")}${fact("주차 가능",v.parking?v.parking+"대":"확인 필요")}${fact("무료 주차",val(v.parkingFree))}${fact("셔틀버스",yesno(v.shuttle))}${fact("동시 예식",v.simultaneousWeddings?v.simultaneousWeddings+"건":"확인 필요")}${fact("홀 분위기",v.mood)}${fact("식사 형태",v.meal)}</div></section><section class="detail-section"><h3>장점과 확인할 점</h3><div class="pros"><div class="note-box"><strong>장점</strong>\n${v.pros.length?v.pros.map(x=>"• "+x).join("\n"):"아직 기록된 내용이 없습니다."}</div><div class="note-box"><strong>확인할 점</strong>\n${v.cautions.length?v.cautions.map(x=>"• "+x).join("\n"):"아직 기록된 내용이 없습니다."}</div></div></section><section class="detail-section"><h3>상담·방문 메모</h3><div class="note-box">${v.memo||"아직 기록된 메모가 없습니다."}</div></section><p class="source-note">가격과 운영 조건은 실제 상담 시 다시 확인하세요. 이미지에는 직접 촬영했거나 이용 허가를 받은 자료만 사용하는 것을 권장합니다.</p></div>`;document.getElementById("detailModal").classList.add("open");d.querySelector("[data-close]").onclick=closeModals}
+function openDetail(v){const d=document.getElementById("detailDialog");d.innerHTML=`<div class="modal-head"><div><h2 id="detailTitle">${v.name}</h2><div class="source-note">${v.address}</div></div><button class="close" data-close="detailModal" aria-label="닫기">×</button></div>${gallery(v)}<div class="detail-body"><div class="summary-grid">${[["예상 비용",short(estimate(v))],["대관료",short(v.rental)],["식대",fmt(v.mealCost)],["보증 인원",v.guarantee+"명"],["역 접근",v.walkMinutes?`도보 ${v.walkMinutes}분`:"확인 필요"],["주차",v.parking?v.parking+"대":"확인 필요"],["예식 간격",v.interval+"분"],["홀 운영",v.exclusiveHall==null?"확인 필요":v.exclusiveHall?"단독홀":"복수홀"]].map(x=>`<div class="summary"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join("")}</div><section class="detail-section"><h3>비용 및 계약 기준</h3><div class="facts">${fact("예상 비용 산식",`${short(v.rental)} + ${fmt(v.mealCost)} × ${appliedGuests(v)}명`)}${fact("옵션 포함 여부","필수·선택 옵션 제외")}${fact("최소 보증 인원",v.guarantee+"명")}${fact("최대 수용 인원",v.capacity?v.capacity+"명":"확인 필요")}${fact("최근 확인일",val(v.lastChecked))}${fact("예식 시간",v.times.length?v.times.join(", "):"확인 필요")}</div></section><section class="detail-section"><h3>교통·주차·운영</h3><div class="facts">${fact("지하철",(v.lines.join(", ")||"확인 필요")+" · "+v.station)}${fact("역 도보",v.walkMinutes?v.walkMinutes+"분":"확인 필요")}${fact("주차 가능",v.parking?v.parking+"대":"확인 필요")}${fact("무료 주차",val(v.parkingFree))}${fact("셔틀버스",yesno(v.shuttle))}${fact("동시 예식",v.simultaneousWeddings?v.simultaneousWeddings+"건":"확인 필요")}${fact("홀 분위기",v.mood)}${fact("식사 형태",v.meal)}</div></section><section class="detail-section"><h3>장점과 확인할 점</h3><div class="pros"><div class="note-box"><strong>장점</strong>\n${v.pros.length?v.pros.map(x=>"• "+x).join("\n"):"아직 기록된 내용이 없습니다."}</div><div class="note-box"><strong>확인할 점</strong>\n${v.cautions.length?v.cautions.map(x=>"• "+x).join("\n"):"아직 기록된 내용이 없습니다."}</div></div></section><section class="detail-section"><h3>상담·방문 메모</h3><div class="note-box">${v.memo||"아직 기록된 메모가 없습니다."}</div></section><p class="source-note">가격과 운영 조건은 실제 상담 시 다시 확인하세요. 이미지에는 직접 촬영했거나 이용 허가를 받은 자료만 사용하는 것을 권장합니다.</p></div>`;document.getElementById("detailModal").classList.add("open");d.querySelector("[data-close]").onclick=closeModals}
 function toggleCompare(name){if(selected.has(name))selected.delete(name);else{if(selected.size>=3){alert("비교는 최대 3곳까지 가능합니다.");return}selected.add(name)}renderAll();renderCompareBar()}
 function renderCompareBar(){const bar=document.getElementById("compareBar");bar.classList.toggle("show",selected.size>0);document.getElementById("compareCount").textContent=selected.size+"곳 선택";document.getElementById("compareNames").textContent=[...selected].join(" · ")}
 const compareRows=[["예상 비용",v=>short(estimate(v))],["적용 인원",v=>appliedGuests(v)+"명"],["대관료",v=>short(v.rental)],["식대",v=>fmt(v.mealCost)],["보증 인원",v=>v.guarantee+"명"],["역",v=>v.station],["역 도보",v=>v.walkMinutes?v.walkMinutes+"분":"확인 필요"],["주차",v=>v.parking?v.parking+"대":"확인 필요"],["예식 간격",v=>v.interval+"분"],["홀 분위기",v=>v.mood],["식사",v=>v.meal],["단독홀",v=>yesno(v.exclusiveHall)],["상태",v=>v.status]];
 function openCompare(){const vs=venues.filter(v=>selected.has(v.name));document.getElementById("compareContent").innerHTML=vs.length?`<table class="compare-table"><thead><tr><th>비교 항목</th>${vs.map(v=>`<th>${v.name}</th>`).join("")}</tr></thead><tbody>${compareRows.map(([l,f])=>`<tr><td>${l}</td>${vs.map(v=>`<td>${f(v)}</td>`).join("")}</tr>`).join("")}</tbody></table><p class="source-note">예상 비용은 대관료와 식대만 포함하며 필수·선택 옵션은 제외합니다.</p>`:"비교할 웨딩홀을 선택해주세요.";document.getElementById("compareModal").classList.add("open")}
 function closeModals(){document.querySelectorAll(".modal").forEach(m=>m.classList.remove("open"))}document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeModals);document.querySelectorAll(".modal").forEach(m=>m.onclick=e=>{if(e.target===m)closeModals()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals()});document.getElementById("openCompare").onclick=openCompare;
 document.getElementById("guestCount").addEventListener("change",e=>{guestCount=Math.max(50,Math.min(2000,+e.target.value||250));e.target.value=guestCount;renderAll()});
-let map=null;if(window.kakao?.maps){const container=document.getElementById("map");map=new kakao.maps.Map(container,{center:new kakao.maps.LatLng(37.515,127.02),level:8});const geocoder=new kakao.maps.services.Geocoder(),bounds=new kakao.maps.LatLngBounds();let pending=venues.length;venues.forEach(v=>geocoder.addressSearch(v.address,(result,status)=>{if(status===kakao.maps.services.Status.OK){const pos=new kakao.maps.LatLng(result[0].y,result[0].x),marker=new kakao.maps.Marker({position:pos,map}),info=new kakao.maps.InfoWindow({content:`<div class="info-window"><strong>${v.name}</strong><span>${v.station} · 예상 ${short(estimate(v))}</span></div>`});kakao.maps.event.addListener(marker,"click",()=>{if(activeInfo)activeInfo.close();info.open(map,marker);activeInfo=info});markerEntries.push({v,marker,pos});bounds.extend(pos)}if(--pending===0){if(!bounds.isEmpty())map.setBounds(bounds);document.getElementById("mapLoading").classList.add("hidden")}applyMarkerVisibility()}))}else document.getElementById("mapLoading").textContent="지도를 불러오지 못했습니다.";
-function applyMarkerVisibility(){markerEntries.forEach(x=>x.marker.setMap(matches(x.v)?map:null))}function renderAll(){renderControls();renderKpis();renderList();renderCompareBar()}renderAll();
+
+function rebuildMarkers(){
+  if(!window.kakao?.maps){document.getElementById("mapLoading").textContent="지도를 불러오지 못했습니다.";return;}
+  if(!map)map=new kakao.maps.Map(document.getElementById("map"),{center:new kakao.maps.LatLng(37.515,127.02),level:8});
+  markerEntries.forEach(m=>m.marker.setMap(null));markerEntries=[];activeInfo=null;
+  document.getElementById("mapLoading").classList.remove("hidden");
+  document.getElementById("mapLoading").textContent="위치를 확인하는 중입니다…";
+  const geocoder=new kakao.maps.services.Geocoder(),bounds=new kakao.maps.LatLngBounds();
+  let pending=venues.length;
+  if(!pending){document.getElementById("mapLoading").classList.add("hidden");return;}
+  venues.forEach(v=>geocoder.addressSearch(v.address,(result,status)=>{
+    if(status===kakao.maps.services.Status.OK){
+      const pos=new kakao.maps.LatLng(result[0].y,result[0].x),marker=new kakao.maps.Marker({position:pos,map}),info=new kakao.maps.InfoWindow({content:`<div class="info-window"><strong>${v.name}</strong><span>${v.station} · 예상 ${short(estimate(v))}</span></div>`});
+      kakao.maps.event.addListener(marker,"click",()=>{if(activeInfo)activeInfo.close();info.open(map,marker);activeInfo=info});
+      markerEntries.push({v,marker,pos});bounds.extend(pos);
+    }
+    if(--pending===0){if(!bounds.isEmpty())map.setBounds(bounds);document.getElementById("mapLoading").classList.add("hidden");applyMarkerVisibility();}
+  }));
+}
+function applyMarkerVisibility(){markerEntries.forEach(x=>x.marker.setMap(matches(x.v)?map:null))}
+function renderAll(){renderControls();renderKpis();renderList();renderCompareBar()}
+
+async function loadVenues(){
+  try{
+    const res=await fetch(SHEET_CSV_URL+"&_="+Date.now());
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const rows=parseCsv(await res.text());
+    const parsed=csvRowsToVenues(rows);
+    if(!parsed.length)throw new Error("시트에서 읽은 행이 없습니다.");
+    venues=withDefaults(parsed);
+    renderAll();
+    rebuildMarkers();
+  }catch(err){
+    console.warn("시트를 불러오지 못해 마지막 확인 스냅샷을 표시합니다:",err);
+  }
+}
+
+renderAll();
+rebuildMarkers();
+loadVenues();
 </script>
 </body>
 </html>
