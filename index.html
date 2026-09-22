@@ -94,7 +94,7 @@ function parseCsv(text){
 function csvRowsToVenues(rows){
   if(!rows.length)return [];
   const header=rows[0],col=name=>header.indexOf(name);
-  const iName=col("이름"),iGu=col("위치"),iStation=col("지하철"),iMood=col("홀분위기"),iMeal=col("식사 형태"),iRental=col("대관료"),iMealCost=col("식대"),iParking=col("주차대수"),iTimes=col("예식 시간"),iGuarantee=col("보증 인원"),iInterval=col("예식 간격"),iPref=col("선호도"),iPros=col("장점"),iAddress=col("주소");
+  const iName=col("이름"),iGu=col("위치"),iStation=col("지하철"),iMood=col("홀분위기"),iMeal=col("식사 형태"),iRental=col("대관료"),iMealCost=col("식대"),iParking=col("주차대수"),iTimes=col("예식 시간"),iGuarantee=col("보증 인원"),iInterval=col("예식 간격"),iPref=col("선호도"),iPros=col("장점"),iAddress=col("주소"),iImage=col("이미지"),iPhotos=col("사진");
   const num=raw=>{const s=String(raw??"").trim();if(!s)return null;const n=Number(s.replace(/[^0-9.-]/g,""));return Number.isFinite(n)?n:null;};
   return rows.slice(1).filter(r=>(r[iName]||"").trim()).map(r=>{
     const station=(r[iStation]||"").trim();
@@ -107,6 +107,8 @@ function csvRowsToVenues(rows){
       guarantee:num(r[iGuarantee])||0,interval:num(r[iInterval])||0,
       preference:(r[iPref]||"").trim(),
       pros:(r[iPros]||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean),
+      image:iImage>-1&&(r[iImage]||"").trim()?(r[iImage]||"").trim():null,
+      photos:iPhotos>-1?(r[iPhotos]||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean):[],
     };
   });
 }
