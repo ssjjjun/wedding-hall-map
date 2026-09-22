@@ -3,391 +3,84 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>웨딩홀 지도</title>
+<title>웨딩홀 비교 지도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@600;700&display=swap">
 <style>
-  :root {
-    --paper: #f6f3f6; --surface: #ffffff; --surface-alt: #efe9ef;
-    --ink: #2b2430; --muted: #756a78; --line: #e1dae2;
-    --accent: #7a3b4e; --accent-strong: #5c2c3b; --accent-tint: #f1e1e6;
-    --sage: #4f7a58; --sage-tint: #e5efe6;
-    --amber: #8a6a1f; --amber-tint: #f4ecd6;
-    --steel: #45607a; --steel-tint: #e6edf3;
-    --shadow: 0 10px 28px -16px rgba(43, 36, 48, 0.32);
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --paper: #1c1720; --surface: #262029; --surface-alt: #322a35;
-      --ink: #efe8f0; --muted: #b0a5b2; --line: #3c3440;
-      --accent: #e2a0b1; --accent-strong: #f0bccb; --accent-tint: #3a2530;
-      --sage: #8fc199; --sage-tint: #23342a;
-      --amber: #d8b866; --amber-tint: #3a2f18;
-      --steel: #8fb0cf; --steel-tint: #1e2b36;
-      --shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.55);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --paper: #1c1720; --surface: #262029; --surface-alt: #322a35;
-    --ink: #efe8f0; --muted: #b0a5b2; --line: #3c3440;
-    --accent: #e2a0b1; --accent-strong: #f0bccb; --accent-tint: #3a2530;
-    --sage: #8fc199; --sage-tint: #23342a;
-    --amber: #d8b866; --amber-tint: #3a2f18;
-    --steel: #8fb0cf; --steel-tint: #1e2b36;
-    --shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.55);
-    color-scheme: dark;
-  }
-
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--paper); color: var(--ink);
-    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
-    font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 20px 64px; }
-
-  .eyebrow {
-    font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--accent); margin: 0 0 6px;
-  }
-  h1 { font-family: "Noto Serif KR", serif; font-size: 26px; margin: 0 0 6px; text-wrap: balance; }
-  .sub { color: var(--muted); margin: 0 0 20px; max-width: 60ch; }
-
-  .kpi-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 22px; }
-  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
-  .kpi .klabel { font-size: 11px; color: var(--muted); margin: 0 0 4px; }
-  .kpi .kvalue { font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-  .kpi .kvalue .unit { font-size: 11.5px; font-weight: 500; color: var(--muted); margin-left: 2px; }
-
-  .map-card {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
-    box-shadow: var(--shadow); padding: 16px; margin-bottom: 18px;
-  }
-  .map-card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
-  .map-card-head h2 { font-family: "Noto Serif KR", serif; font-size: 16px; margin: 0; }
-  .map-card-head .hint { font-size: 11.5px; color: var(--muted); }
-
-  .map-shell { position: relative; border-radius: 10px; overflow: hidden; }
-  #map { width: 100%; height: 460px; background: var(--surface-alt); }
-  .map-loading {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    gap: 8px; background: var(--surface-alt); color: var(--muted); font-size: 12.5px;
-    transition: opacity 0.25s ease; pointer-events: none;
-  }
-  .map-loading.hidden { opacity: 0; }
-  .spin {
-    width: 13px; height: 13px; border-radius: 50%;
-    border: 2px solid var(--line); border-top-color: var(--accent);
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .controls {
-    display: flex; flex-direction: column; gap: 10px;
-    padding: 14px 16px; background: var(--surface); border: 1px solid var(--line);
-    border-radius: 12px; margin-bottom: 22px;
-  }
-  .control-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .glabel { font-size: 11.5px; font-weight: 600; color: var(--muted); margin-right: 4px; min-width: 56px; }
-  .chip {
-    border: 1px solid var(--line); background: var(--surface-alt); color: var(--ink);
-    font: inherit; font-size: 12px; font-weight: 500; padding: 5px 12px;
-    border-radius: 999px; cursor: pointer; transition: background .12s ease, border-color .12s ease, color .12s ease;
-  }
-  .chip:hover { border-color: var(--accent); }
-  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  .gu-section { margin-bottom: 26px; }
-  .gu-section-head {
-    display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px;
-    padding-bottom: 7px; border-bottom: 2px solid var(--line);
-  }
-  .gu-section-head h3 { font-family: "Noto Serif KR", serif; font-size: 17px; margin: 0; }
-  .count-tag {
-    font-size: 11px; font-weight: 600; color: var(--accent);
-    background: var(--accent-tint); padding: 2px 9px; border-radius: 999px;
-  }
-
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(246px, 1fr)); gap: 12px; }
-  .venue-card {
-    border: 1px solid var(--line); border-radius: 12px; padding: 14px;
-    background: var(--surface); cursor: pointer;
-    transition: border-color .12s ease, transform .12s ease, box-shadow .12s ease;
-    display: flex; flex-direction: column; gap: 9px;
-  }
-  .venue-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow); }
-  .venue-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .venue-card .vname { font-weight: 700; font-size: 14.5px; }
-
-  .station-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-  .line-badge {
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 700; color: #fff; line-height: 1; flex-shrink: 0;
-  }
-  .line-badge.circle { width: 18px; height: 18px; border-radius: 50%; }
-  .line-badge.pill { height: 18px; padding: 0 6px; border-radius: 9px; font-size: 9.5px; }
-  .vstation { font-size: 11.5px; color: var(--muted); }
-
-  .price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .rental { font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
-  .meal { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-
-  .badge-row { display: flex; flex-wrap: wrap; gap: 5px; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px;
-    font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
-  }
-  .badge.bright { background: var(--sage-tint); color: var(--sage); }
-  .badge.dark { background: var(--accent-tint); color: var(--accent); }
-  .badge.meal-type { background: var(--surface-alt); color: var(--muted); }
-  .badge.interval { background: var(--amber-tint); color: var(--amber); }
-  .badge.guarantee { background: var(--steel-tint); color: var(--steel); }
-
-  .info-window { padding: 10px 12px; font-family: "Noto Sans KR", sans-serif; min-width: 190px; }
-  .info-window .iname { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
-  .info-window .istation { font-size: 11px; color: #756a78; margin-bottom: 6px; }
-  .info-window .iprice { font-size: 13px; font-weight: 700; color: #7a3b4e; }
-  .info-window .imeal { font-size: 11px; color: #756a78; }
-
-  .empty-note {
-    font-size: 13px; color: var(--muted); padding: 18px; text-align: center;
-    border: 1px dashed var(--line); border-radius: 12px;
-  }
-
-  footer { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 8px; }
-
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; animation: none !important; }
-  }
+:root{--paper:#f7f4f5;--surface:#fff;--soft:#f1ebed;--ink:#2d2529;--muted:#786c72;--line:#e4dadd;--accent:#7d3f52;--accent2:#5d2e3d;--rose:#f4e3e8;--sage:#e6f0e7;--sage-ink:#3f7149;--amber:#f6edd5;--amber-ink:#81631f;--blue:#e6eef5;--blue-ink:#405f79;--shadow:0 16px 44px -26px rgba(45,37,41,.45)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Noto Sans KR","Malgun Gothic",sans-serif;font-size:14px;line-height:1.55}.wrap{max-width:1180px;margin:auto;padding:36px 20px 90px}button,input{font:inherit}button{cursor:pointer}.eyebrow{margin:0 0 7px;color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}h1,h2,h3{font-family:"Noto Serif KR",serif}.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:20px}.hero h1{font-size:30px;margin:0 0 6px}.sub{max-width:690px;margin:0;color:var(--muted)}.guest-box{min-width:250px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px;box-shadow:var(--shadow)}.guest-box label{display:block;font-size:12px;font-weight:700;margin-bottom:7px}.guest-input{display:flex;align-items:center;gap:8px}.guest-input input{width:115px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;color:var(--ink);background:var(--surface)}.guest-help{margin-top:6px;color:var(--muted);font-size:10.5px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 15px}.klabel{margin:0 0 3px;color:var(--muted);font-size:11px}.kvalue{margin:0;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-bottom:16px}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.panel-head h2{margin:0;font-size:17px}.hint{font-size:11.5px;color:var(--muted)}.map-shell{position:relative;border-radius:11px;overflow:hidden}#map{height:430px;background:var(--soft)}.map-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--muted);transition:.2s}.map-loading.hidden{opacity:0;pointer-events:none}.controls{position:sticky;top:8px;z-index:8;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:22px;box-shadow:var(--shadow)}.control-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0}.glabel{width:64px;color:var(--muted);font-size:11.5px;font-weight:700}.chip{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:5px 11px;font-size:11.5px}.chip:hover{border-color:var(--accent)}.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}.section{margin:26px 0}.section-head{display:flex;align-items:baseline;gap:8px;border-bottom:2px solid var(--line);padding-bottom:8px;margin-bottom:12px}.section-head h2{font-size:18px;margin:0}.count{background:var(--rose);color:var(--accent);border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:15px;transition:.15s;display:flex;flex-direction:column}.card:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--shadow)}.thumb{height:150px;background:linear-gradient(135deg,#eadde1,#f5eff1);position:relative;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:cover}.thumb.empty{display:grid;place-items:center;color:var(--muted);font-size:11px}.thumb.empty:before{content:"대표 이미지 준비 중"}.card-body{padding:14px;display:flex;flex-direction:column;gap:9px;flex:1}.card-title{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.vname{font-size:15.5px;font-weight:700}.status{font-size:10px;border-radius:999px;padding:3px 8px;background:var(--soft);color:var(--muted);white-space:nowrap}.station{display:flex;gap:5px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:11.5px}.line{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;color:#fff;font-size:9px;font-weight:700}.estimate{border-radius:11px;background:var(--rose);padding:10px 11px}.estimate small{display:block;color:var(--accent);font-size:10.5px}.estimate strong{font-size:18px;color:var(--accent2);font-variant-numeric:tabular-nums}.price-sub{color:var(--muted);font-size:10.5px}.badges{display:flex;flex-wrap:wrap;gap:5px}.badge{border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:600;background:var(--soft);color:var(--muted)}.badge.good{background:var(--sage);color:var(--sage-ink)}.badge.warn{background:var(--amber);color:var(--amber-ink)}.badge.info{background:var(--blue);color:var(--blue-ink)}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:auto}.btn{border:1px solid var(--line);border-radius:9px;padding:8px;background:var(--surface);color:var(--ink);font-weight:600;font-size:12px}.btn:hover{border-color:var(--accent)}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.selected{background:var(--rose);border-color:var(--accent);color:var(--accent)}.empty-note{padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}.compare-bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;width:min(720px,calc(100% - 28px));display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--ink);color:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 18px 50px rgba(0,0,0,.3)}.compare-bar.show{display:flex}.compare-names{font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.compare-bar button{border:0;border-radius:9px;background:#fff;color:var(--ink);font-weight:700;padding:8px 13px}.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(25,19,22,.65)}.modal.open{display:flex}.dialog{width:min(1000px,100%);max-height:92vh;overflow:auto;background:var(--surface);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35)}.modal-head{position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:var(--surface);border-bottom:1px solid var(--line)}.modal-head h2{margin:0;font-size:20px}.close{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:var(--surface);font-size:20px}.detail-gallery{display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:150px 150px;gap:6px;padding:18px 20px 0}.gallery-item{background:var(--soft);border-radius:10px;overflow:hidden;display:grid;place-items:center;color:var(--muted);font-size:11px}.gallery-item:first-child{grid-row:1/3}.gallery-item img{width:100%;height:100%;object-fit:cover}.detail-body{padding:20px}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:20px}.summary{background:var(--soft);border-radius:11px;padding:10px}.summary span{display:block;color:var(--muted);font-size:10.5px}.summary strong{font-size:13px}.detail-section{margin:20px 0}.detail-section h3{font-family:"Noto Sans KR",sans-serif;font-size:14px;margin:0 0 9px}.facts{display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--line)}.fact{display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line)}.fact span:first-child{color:var(--muted);font-size:12px}.pros{display:grid;grid-template-columns:1fr 1fr;gap:10px}.note-box{background:var(--soft);border-radius:11px;padding:13px;white-space:pre-line}.source-note{font-size:11px;color:var(--muted)}.compare-wrap{padding:18px;overflow:auto}.compare-table{width:100%;min-width:700px;border-collapse:collapse}.compare-table th,.compare-table td{padding:11px;border-bottom:1px solid var(--line);text-align:center}.compare-table th:first-child,.compare-table td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}.compare-table thead th{color:var(--accent);font-size:13px}.info-window{padding:9px 11px;min-width:190px}.info-window strong{display:block}.info-window span{display:block;color:#756a78;font-size:11px}footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:850px){.hero{display:block}.guest-box{margin-top:14px}.kpis{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr 1fr}.summary-grid{grid-template-columns:1fr 1fr}.detail-gallery{grid-template-rows:120px 120px}.facts{grid-template-columns:1fr}}
+@media(max-width:570px){.wrap{padding:24px 14px 90px}.hero h1{font-size:25px}.kpis{grid-template-columns:1fr 1fr}.kpi{padding:10px}.kvalue{font-size:13px}#map{height:300px}.controls{top:4px}.glabel{width:100%;margin-top:4px}.grid{grid-template-columns:1fr}.thumb{height:190px}.modal{padding:0}.dialog{max-height:100vh;height:100%;border-radius:0}.detail-gallery{grid-template-columns:1fr 1fr;grid-template-rows:210px 100px}.gallery-item:first-child{grid-column:1/3;grid-row:auto}.summary-grid{grid-template-columns:1fr 1fr}.pros{grid-template-columns:1fr}.compare-bar{bottom:8px}.fact{grid-template-columns:100px 1fr}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <p class="eyebrow">Wedding Hall Compass · Map</p>
-  <h1>웨딩홀 지도</h1>
-  <p class="sub">구별로 저장한 웨딩홀 위치를 실제 주소 기준으로 지도에 표시했습니다. 카드를 클릭하면 지도가 해당 위치로 이동합니다.</p>
-
-  <div class="kpi-row" id="kpiRow"></div>
-
-  <div class="map-card">
-    <div class="map-card-head">
-      <h2>지도로 보기</h2>
-      <span class="hint">핀을 클릭하면 요약 정보가 뜹니다</span>
-    </div>
-    <div class="map-shell">
-      <div id="map"></div>
-      <div class="map-loading" id="mapLoading"><span class="spin"></span>위치를 확인하는 중입니다…</div>
-    </div>
+<main class="wrap">
+  <div class="hero">
+    <div><p class="eyebrow">Wedding Hall Compass</p><h1>웨딩홀 비교 지도</h1><p class="sub">위치와 가격뿐 아니라 교통·주차·예식 운영 조건을 함께 비교하세요. 카드에서 최대 3곳을 비교함에 담을 수 있습니다.</p></div>
+    <div class="guest-box"><label for="guestCount">예상 하객 수</label><div class="guest-input"><input id="guestCount" type="number" min="50" max="2000" step="10" value="250"><span>명</span></div><div class="guest-help">예상 비용 = 대관료 + 식대 × 적용 인원<br>입력값이 보증 인원보다 적으면 보증 인원을 적용합니다.</div></div>
   </div>
-
-  <div class="controls">
-    <div class="control-row"><span class="glabel">구</span><div id="guChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div></div>
-    <div class="control-row"><span class="glabel">분위기</span><div id="moodChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div></div>
-    <div class="control-row"><span class="glabel">예식 간격</span><div id="intervalChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div></div>
-    <div class="control-row"><span class="glabel">보증 인원</span><div id="guaranteeChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div></div>
-  </div>
-
+  <section class="kpis" id="kpis" aria-label="후보 요약"></section>
+  <section class="panel"><div class="panel-head"><h2>지도로 보기</h2><span class="hint">핀을 클릭하면 요약 정보가 표시됩니다</span></div><div class="map-shell"><div id="map"></div><div class="map-loading" id="mapLoading">위치를 확인하는 중입니다…</div></div></section>
+  <section class="controls" aria-label="웨딩홀 필터">
+    <div class="control-row"><span class="glabel">지역</span><div id="guChips"></div></div>
+    <div class="control-row"><span class="glabel">홀 분위기</span><div id="moodChips"></div></div>
+    <div class="control-row"><span class="glabel">예식 간격</span><div id="intervalChips"></div></div>
+    <div class="control-row"><span class="glabel">보증 인원</span><div id="guaranteeChips"></div></div>
+  </section>
   <div id="listRoot"></div>
-  <footer>대관료는 만원 단위, 식대는 1인 기준입니다. 지도 위치는 노션에 기재된 도로명 주소를 기준으로 지오코딩한 좌표입니다.</footer>
-</div>
-
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a298ea8e3d65c49fc3da442d1dbc72d1&libraries=services"></script>
+  <footer>예상 비용에는 필수·선택 옵션이 포함되지 않습니다. 가격과 운영 조건은 상담 시점에 따라 달라질 수 있으므로 최근 확인일을 확인하세요.</footer>
+</main>
+<div class="compare-bar" id="compareBar"><div><strong id="compareCount">0곳 선택</strong><div class="compare-names" id="compareNames"></div></div><button id="openCompare">선택 항목 비교</button></div>
+<div class="modal" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="dialog" id="detailDialog"></div></div>
+<div class="modal" id="compareModal" role="dialog" aria-modal="true" aria-labelledby="compareTitle"><div class="dialog"><div class="modal-head"><h2 id="compareTitle">웨딩홀 비교</h2><button class="close" data-close="compareModal" aria-label="닫기">×</button></div><div class="compare-wrap" id="compareContent"></div></div></div>
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a298ea8e3d65c49fc3da442d1dbc72d1&libraries=services"></script>
 <script>
-  const LINES = {
-    "1호선": { color: "#0052A4", label: "1", shape: "circle" },
-    "2호선": { color: "#00A84D", label: "2", shape: "circle" },
-    "3호선": { color: "#EF7C1C", label: "3", shape: "circle" },
-    "4호선": { color: "#00A5DE", label: "4", shape: "circle" },
-    "5호선": { color: "#996CAC", label: "5", shape: "circle" },
-    "6호선": { color: "#CD7C2F", label: "6", shape: "circle" },
-    "7호선": { color: "#747F00", label: "7", shape: "circle" },
-    "8호선": { color: "#E6186C", label: "8", shape: "circle" },
-    "9호선": { color: "#BDB092", label: "9", shape: "circle", dark: true },
-    "신분당선": { color: "#D4003B", label: "신분당", shape: "pill" },
-    "경의중앙선": { color: "#77C4A3", label: "경의중앙", shape: "pill" },
-    "공항철도": { color: "#0090D2", label: "공항철도", shape: "pill" },
-    "수인분당선": { color: "#FABE00", label: "수인분당", shape: "pill", dark: true },
-  };
-
-  const venues = [
-    { name: "더컨벤션 신사", gu: "강남구", station: "신사역", lines: ["3호선", "신분당선"], address: "서울 강남구 강남대로 652", mood: "어두움", meal: "뷔페", rental: 16500000, mealCost: 160000, guarantee: 300, interval: 90 },
-    { name: "메종드아나하", gu: "송파구", station: "역삼역", lines: ["2호선"], address: "서울 강남구 언주로 517", mood: "어두움", meal: "뷔페", rental: 15500000, mealCost: 150000, guarantee: 300, interval: 90 },
-    { name: "웨스턴베니비스 영등포", gu: "영등포구", station: "영등포구청역", lines: ["2호선", "5호선"], address: "서울 영등포구 국회대로 558", mood: "어두움", meal: "뷔페", rental: 14300000, mealCost: 95000, guarantee: 250, interval: 90 },
-    { name: "까사그랑데", gu: "광진구", station: "건대입구역", lines: ["2호선", "7호선"], address: "서울 광진구 능동로 87", mood: "밝음", meal: "뷔페", rental: 12000000, mealCost: 110000, guarantee: 250, interval: 90 },
-    { name: "더컨벤션 잠실", gu: "송파구", station: "잠실역", lines: ["2호선", "8호선"], address: "서울 송파구 올림픽로 319", mood: "어두움", meal: "뷔페", rental: 11500000, mealCost: 80000, guarantee: 250, interval: 90 },
-    { name: "세이트메리엘", gu: "강남구", station: "강남역", lines: ["2호선", "신분당선"], address: "서울 강남구 논현로79길 72", mood: "어두움", meal: "뷔페", rental: 9800000, mealCost: 85000, guarantee: 250, interval: 90 },
-    { name: "서울웨딩타워", gu: "송파구", station: "가락시장역", lines: ["3호선", "8호선"], address: "서울 송파구 양재대로 932", mood: "어두움", meal: "뷔페", rental: 8000000, mealCost: 90000, guarantee: 300, interval: 90 },
-    { name: "더컨벤션 반포", gu: "서초구", station: "신반포역", lines: ["9호선"], address: "서울 서초구 사평대로 108", mood: "어두움", meal: "뷔페", rental: 8000000, mealCost: 85000, guarantee: 250, interval: 90 },
-    { name: "더채플앳청담", gu: "강남구", station: "강남구청역", lines: ["7호선", "수인분당선"], address: "서울 강남구 선릉로 757", mood: "밝음", meal: "뷔페", rental: 8000000, mealCost: 95000, guarantee: 250, interval: 90 },
-    { name: "더컨벤션 영등포", gu: "영등포구", station: "영등포구청역", lines: ["2호선", "5호선"], address: "서울 영등포구 국회대로38길 2", mood: "어두움", meal: "뷔페", rental: 7500000, mealCost: 80000, guarantee: 250, interval: 90 },
-    { name: "아펠가모 공덕", gu: "마포구", station: "공덕역", lines: ["5호선", "6호선", "경의중앙선", "공항철도"], address: "서울 마포구 마포대로 92", mood: "밝음", meal: "뷔페", rental: 7000000, mealCost: 85000, guarantee: 250, interval: 90 },
-    { name: "아펠가모 반포", gu: "서초구", station: "고속터미널역", lines: ["3호선", "7호선", "9호선"], address: "서울 서초구 반포대로 235 LL층", mood: "밝음", meal: "뷔페", rental: 7000000, mealCost: 85000, guarantee: 250, interval: 90 },
-    { name: "더화이트베일", gu: "서초구", station: "남부터미널역", lines: ["3호선"], address: "서울 서초구 서초중앙로 14", mood: "어두움", meal: "코스", rental: 7000000, mealCost: 80000, guarantee: 250, interval: 90 },
-    { name: "PJ호텔 웨딩홀", gu: "중구", station: "을지로4가역", lines: ["2호선", "5호선"], address: "서울 중구 마른내로 71", mood: "어두움", meal: "뷔페", rental: 7000000, mealCost: 80000, guarantee: 250, interval: 120 },
-    { name: "JK아트컨벤션", gu: "영등포구", station: "문래역", lines: ["2호선"], address: "서울 영등포구 문래로 164", mood: "어두움", meal: "뷔페", rental: 7000000, mealCost: 75000, guarantee: 200, interval: 90 },
-    { name: "루벨", gu: "강동구", station: "강동역", lines: ["5호선"], address: "서울 강동구 천호대로 1077", mood: "밝음", meal: "뷔페", rental: 6000000, mealCost: 75000, guarantee: 200, interval: 90 },
-    { name: "더베네치아", gu: "송파구", station: "잠실역", lines: ["2호선", "8호선"], address: "서울 송파구 올림픽로35다길 42", mood: "어두움", meal: "뷔페", rental: 6000000, mealCost: 70000, guarantee: 200, interval: 70 },
-    { name: "라온제나 강남", gu: "강남구", station: "강남구청역", lines: ["7호선", "수인분당선"], address: "서울 강남구 학동로47길 5", mood: "밝음", meal: "뷔페", rental: 6000000, mealCost: 75000, guarantee: 200, interval: 90 },
-  ];
-
-  const manwon = n => (n / 10000).toLocaleString("ko-KR") + "만원";
-  const won = n => "₩" + n.toLocaleString("ko-KR");
-  const lineBadge = ln => {
-    const meta = LINES[ln] || { color: "#888", label: ln, shape: "pill" };
-    const cls = meta.shape === "circle" ? "circle" : "pill";
-    const color = meta.dark ? "#2b2430" : "#fff";
-    return `<span class="line-badge ${cls}" style="background:${meta.color};color:${color};">${meta.label}</span>`;
-  };
-
-  function renderKPI() {
-    const gus = new Set(venues.map(v => v.gu));
-    const rentals = venues.map(v => v.rental);
-    const min = Math.min(...rentals), max = Math.max(...rentals);
-    const items = [
-      ["후보 웨딩홀", venues.length, "곳"],
-      ["검토 중인 구", gus.size, "개"],
-      ["대관료 범위", `${manwon(min)} ~ ${manwon(max)}`, ""],
-    ];
-    document.getElementById("kpiRow").innerHTML = items.map(([label, val, unit]) => `
-      <div class="kpi"><p class="klabel">${label}</p><p class="kvalue">${val}<span class="unit">${unit}</span></p></div>
-    `).join("");
-  }
-
-  const state = { gu: null, mood: "전체", interval: "전체", guarantee: "전체" };
-  const markerEntries = [];
-  let activeInfoWindow = null;
-  const bounds = new kakao.maps.LatLngBounds();
-
-  const container = document.getElementById("map");
-  const map = new kakao.maps.Map(container, {
-    center: new kakao.maps.LatLng(37.515, 127.02),
-    level: 8,
-  });
-
-  const geocoder = new kakao.maps.services.Geocoder();
-  let pendingGeocodes = venues.length;
-
-  venues.forEach(v => {
-    geocoder.addressSearch(v.address, (result, status) => {
-      if (status === kakao.maps.services.Status.OK) {
-        const pos = new kakao.maps.LatLng(result[0].y, result[0].x);
-        const marker = new kakao.maps.Marker({ position: pos, map });
-        const info = new kakao.maps.InfoWindow({
-          content: `
-            <div class="info-window">
-              <div class="iname">${v.name}</div>
-              <div class="istation">${v.gu} · ${v.station}</div>
-              <div class="iprice">${manwon(v.rental)} <span class="imeal">/ 대관료</span></div>
-              <div class="imeal">식대 ${won(v.mealCost)} · ${v.meal}</div>
-            </div>`,
-        });
-        kakao.maps.event.addListener(marker, "click", () => {
-          if (activeInfoWindow) activeInfoWindow.close();
-          info.open(map, marker);
-          activeInfoWindow = info;
-          map.panTo(pos);
-        });
-        markerEntries.push({ v, marker, info, pos });
-        bounds.extend(pos);
-      } else {
-        console.warn("주소 지오코딩 실패:", v.name, v.address);
-      }
-      pendingGeocodes -= 1;
-      if (pendingGeocodes === 0) {
-        if (!bounds.isEmpty()) map.setBounds(bounds);
-        document.getElementById("mapLoading").classList.add("hidden");
-      }
-      applyMarkerVisibility();
-    });
-  });
-
-  function focusVenue(v) {
-    const found = markerEntries.find(m => m.v === v);
-    if (!found) return;
-    if (activeInfoWindow) activeInfoWindow.close();
-    found.info.open(map, found.marker);
-    activeInfoWindow = found.info;
-    map.setLevel(5);
-    map.panTo(found.pos);
-  }
-
-  function matchesFilter(v) {
-    return (!state.gu || v.gu === state.gu) &&
-      (state.mood === "전체" || v.mood === state.mood) &&
-      (state.interval === "전체" || v.interval === Number(state.interval)) &&
-      (state.guarantee === "전체" || v.guarantee === Number(state.guarantee));
-  }
-
-  function applyMarkerVisibility() {
-    markerEntries.forEach(({ marker, v }) => marker.setMap(matchesFilter(v) ? map : null));
-  }
-
-  function chipRow(elId, options, currentVal, onPick) {
-    document.getElementById(elId).innerHTML = options.map(([label, val]) => `
-      <button class="chip ${currentVal === val ? "active" : ""}" data-val="${val ?? ""}">${label}</button>
-    `).join("");
-    document.getElementById(elId).querySelectorAll("[data-val]").forEach((btn, i) => {
-      btn.onclick = () => { onPick(options[i][1]); renderAll(); };
-    });
-  }
-
-  function renderControls() {
-    const gus = [...new Set(venues.map(v => v.gu))];
-    chipRow("guChips", [["전체", null], ...gus.map(g => [g, g])], state.gu, v => state.gu = v);
-    chipRow("moodChips", [["전체", "전체"], ["밝음", "밝음"], ["어두움", "어두움"]], state.mood, v => state.mood = v);
-    const intervals = [...new Set(venues.map(v => v.interval))].sort((a, b) => a - b);
-    chipRow("intervalChips", [["전체", "전체"], ...intervals.map(i => [i + "분", String(i)])], state.interval, v => state.interval = v);
-    const guarantees = [...new Set(venues.map(v => v.guarantee))].sort((a, b) => a - b);
-    chipRow("guaranteeChips", [["전체", "전체"], ...guarantees.map(g => [g + "명", String(g)])], state.guarantee, v => state.guarantee = v);
-  }
-
-  function venueCard(v) {
-    return `
-      <div class="venue-card" data-name="${v.name}" tabindex="0">
-        <div class="vname">${v.name}</div>
-        <div class="station-row">${v.lines.map(lineBadge).join("")}<span class="vstation">${v.station}</span></div>
-        <div class="price-row">
-          <span class="rental">${manwon(v.rental)}</span>
-          <span class="meal">식대 ${won(v.mealCost)}</span>
-        </div>
-        <div class="badge-row">
-          <span class="badge ${v.mood === "밝음" ? "bright" : "dark"}">${v.mood}</span>
-          <span class="badge meal-type">${v.meal}</span>
-          <span class="badge interval">${v.interval}분 간격</span>
-          <span class="badge guarantee">보증 ${v.guarantee}명</span>
-        </div>
-      </div>`;
-  }
-
-  function renderList() {
-    const filtered = venues.filter(matchesFilter);
-    const byGu = {};
-    filtered.forEach(v => (byGu[v.gu] ||= []).push(v));
-    const gus = Object.keys(byGu);
-    const root = document.getElementById("listRoot");
-    if (!gus.length) { root.innerHTML = `<div class="empty-note">조건에 맞는 웨딩홀이 없습니다. 필터를 조정해보세요.</div>`; return; }
-
-    root.innerHTML = gus.map(gu => `
-      <div class="gu-section">
-        <div class="gu-section-head"><h3>${gu}</h3><span class="count-tag">${byGu[gu].length}곳</span></div>
-        <div class="card-grid">${byGu[gu].map(venueCard).join("")}</div>
-      </div>
-    `).join("");
-
-    root.querySelectorAll(".venue-card").forEach(card => {
-      const go = () => focusVenue(venues.find(x => x.name === card.dataset.name));
-      card.addEventListener("click", go);
-      card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
-    });
-
-    applyMarkerVisibility();
-  }
-
-  function renderAll() { renderControls(); renderList(); }
-  renderKPI();
-  renderAll();
+/*
+  노션 데이터를 갱신할 때 아래 venues 배열의 동일한 속성을 수정하세요.
+  image와 photos에는 직접 촬영하거나 사용 허가를 받은 이미지 URL만 입력하는 것을 권장합니다.
+*/
+const LINES={"1호선":["#0052A4","1"],"2호선":["#00A84D","2"],"3호선":["#EF7C1C","3"],"4호선":["#00A5DE","4"],"5호선":["#996CAC","5"],"6호선":["#CD7C2F","6"],"7호선":["#747F00","7"],"8호선":["#E6186C","8"],"9호선":["#BDB092","9"],"신분당선":["#D4003B","신분당"],"경의중앙선":["#77C4A3","경의중앙"],"공항철도":["#0090D2","공항철도"],"수인분당선":["#FABE00","수인분당"]};
+const venues=[
+{name:"더컨벤션 신사",gu:"강남구",station:"신사역",lines:["3호선","신분당선"],address:"서울 강남구 강남대로 652",mood:"어두움",meal:"뷔페",rental:16500000,mealCost:160000,parking:236,times:["11:00","12:30","14:00","15:30","17:00"],guarantee:300,capacity:null,interval:90,status:"조사 중"},
+{name:"메종드아나하",gu:"송파구",station:"역삼역",lines:["2호선"],address:"서울 강남구 언주로 517",mood:"어두움",meal:"뷔페",rental:15500000,mealCost:150000,parking:500,times:["11:00","12:30","14:00","15:30","17:00","18:30"],guarantee:300,capacity:null,interval:90,status:"조사 중"},
+{name:"웨스턴베니비스 영등포",gu:"영등포구",station:"영등포구청역",lines:["2호선","5호선"],address:"서울 영등포구 국회대로 558",mood:"어두움",meal:"뷔페",rental:14300000,mealCost:95000,parking:540,guarantee:250,interval:90},
+{name:"까사그랑데",gu:"광진구",station:"건대입구역",lines:["2호선","7호선"],address:"서울 광진구 능동로 87",mood:"밝음",meal:"뷔페",rental:12000000,mealCost:110000,parking:400,guarantee:250,interval:90},
+{name:"더컨벤션 잠실",gu:"송파구",station:"잠실역",lines:["2호선","8호선"],address:"서울 송파구 올림픽로 319",mood:"어두움",meal:"뷔페",rental:11500000,mealCost:80000,parking:500,guarantee:250,interval:90},
+{name:"세이트메리엘",gu:"강남구",station:"강남역",lines:["2호선","신분당선"],address:"서울 강남구 논현로79길 72",mood:"어두움",meal:"뷔페",rental:9800000,mealCost:85000,parking:600,guarantee:250,interval:90},
+{name:"서울웨딩타워",gu:"송파구",station:"가락시장역",lines:["3호선","8호선"],address:"서울 송파구 양재대로 932",mood:"어두움",meal:"뷔페",rental:8000000,mealCost:90000,parking:2000,guarantee:300,interval:90},
+{name:"더컨벤션 반포",gu:"서초구",station:"신반포역",lines:["9호선"],address:"서울 서초구 사평대로 108",mood:"어두움",meal:"뷔페",rental:8000000,mealCost:85000,parking:400,guarantee:250,interval:90},
+{name:"더채플앳청담",gu:"강남구",station:"강남구청역",lines:["7호선","수인분당선"],address:"서울 강남구 선릉로 757",mood:"밝음",meal:"뷔페",rental:8000000,mealCost:95000,parking:null,guarantee:250,interval:90},
+{name:"더컨벤션 영등포",gu:"영등포구",station:"영등포구청역",lines:["2호선","5호선"],address:"서울 영등포구 국회대로38길 2",mood:"어두움",meal:"뷔페",rental:7500000,mealCost:80000,parking:350,guarantee:250,interval:90},
+{name:"아펠가모 공덕",gu:"마포구",station:"공덕역",lines:["5호선","6호선","경의중앙선","공항철도"],address:"서울 마포구 마포대로 92",mood:"밝음",meal:"뷔페",rental:7000000,mealCost:85000,parking:350,guarantee:250,interval:90},
+{name:"아펠가모 반포",gu:"서초구",station:"고속터미널역",lines:["3호선","7호선","9호선"],address:"서울 서초구 반포대로 235 LL층",mood:"밝음",meal:"뷔페",rental:7000000,mealCost:85000,parking:250,guarantee:250,interval:90},
+{name:"더화이트베일",gu:"서초구",station:"남부터미널역",lines:["3호선"],address:"서울 서초구 서초중앙로 14",mood:"어두움",meal:"코스",rental:7000000,mealCost:80000,parking:400,guarantee:250,interval:90},
+{name:"PJ호텔 웨딩홀",gu:"중구",station:"을지로4가역",lines:["2호선","5호선"],address:"서울 중구 마른내로 71",mood:"어두움",meal:"뷔페",rental:7000000,mealCost:80000,parking:300,guarantee:250,interval:120},
+{name:"JK아트컨벤션",gu:"영등포구",station:"문래역",lines:["2호선"],address:"서울 영등포구 문래로 164",mood:"어두움",meal:"뷔페",rental:7000000,mealCost:75000,parking:600,guarantee:200,interval:90},
+{name:"루벨",gu:"강동구",station:"강동역",lines:["5호선"],address:"서울 강동구 천호대로 1077",mood:"밝음",meal:"뷔페",rental:6000000,mealCost:75000,parking:400,guarantee:200,interval:90},
+{name:"더베네치아",gu:"송파구",station:"잠실역",lines:["2호선","8호선"],address:"서울 송파구 올림픽로35다길 42",mood:"어두움",meal:"뷔페",rental:6000000,mealCost:70000,parking:500,guarantee:200,interval:70},
+{name:"라온제나 강남",gu:"강남구",station:"강남구청역",lines:["7호선","수인분당선"],address:"서울 강남구 학동로47길 5",mood:"밝음",meal:"뷔페",rental:6000000,mealCost:75000,parking:400,guarantee:200,interval:90}
+].map(v=>({times:[],capacity:null,status:"조사 중",walkMinutes:null,shuttle:null,parkingFree:null,exclusiveHall:null,simultaneousWeddings:null,mealRating:null,pros:[],cautions:[],memo:"",lastChecked:null,officialUrl:null,phone:null,image:null,photos:[],...v}));
+const fmt=n=>n==null?"확인 필요":n.toLocaleString("ko-KR")+"원";const short=n=>n==null?"확인 필요":(n/10000).toLocaleString("ko-KR")+"만원";const val=v=>(v===null||v===undefined||v===""?"확인 필요":v);const yesno=v=>v==null?"확인 필요":v?"예":"아니오";
+let guestCount=250;const estimate=v=>v.rental+v.mealCost*Math.max(guestCount,v.guarantee);const appliedGuests=v=>Math.max(guestCount,v.guarantee);
+const state={gu:null,mood:"전체",interval:"전체",guarantee:"전체"};const selected=new Set();let markerEntries=[],activeInfo=null;
+const lineBadge=ln=>{const [c,l]=LINES[ln]||["#888",ln];return `<span class="line" style="background:${c}">${l}</span>`};
+function matches(v){return(!state.gu||v.gu===state.gu)&&(state.mood==="전체"||v.mood===state.mood)&&(state.interval==="전체"||v.interval===+state.interval)&&(state.guarantee==="전체"||v.guarantee===+state.guarantee)}
+function renderKpis(){const filtered=venues.filter(matches),costs=filtered.map(estimate);document.getElementById("kpis").innerHTML=[["조건에 맞는 홀",filtered.length+"곳"],["비교함",selected.size+"곳"],["예상 비용 범위",costs.length?`${short(Math.min(...costs))} ~ ${short(Math.max(...costs))}`:"-"],["계산 기준",guestCount+"명"]].map(x=>`<div class="kpi"><p class="klabel">${x[0]}</p><p class="kvalue">${x[1]}</p></div>`).join("")}
+function chips(id,options,current,setter){const el=document.getElementById(id);el.innerHTML=options.map(([l,v])=>`<button class="chip ${current===v?"active":""}" data-v="${v??""}">${l}</button>`).join("");[...el.children].forEach((b,i)=>b.onclick=()=>{setter(options[i][1]);renderAll()})}
+function renderControls(){const gus=[...new Set(venues.map(v=>v.gu))];chips("guChips",[["전체",null],...gus.map(x=>[x,x])],state.gu,v=>state.gu=v);chips("moodChips",[["전체","전체"],["밝음","밝음"],["어두움","어두움"]],state.mood,v=>state.mood=v);chips("intervalChips",[["전체","전체"],...[...new Set(venues.map(v=>v.interval))].sort((a,b)=>a-b).map(x=>[x+"분",String(x)])],state.interval,v=>state.interval=v);chips("guaranteeChips",[["전체","전체"],...[...new Set(venues.map(v=>v.guarantee))].sort((a,b)=>a-b).map(x=>[x+"명",String(x)])],state.guarantee,v=>state.guarantee=v)}
+function card(v){return `<article class="card"><div class="thumb ${v.image?"":"empty"}">${v.image?`<img src="${v.image}" alt="${v.name} 대표 이미지" loading="lazy">`:""}</div><div class="card-body"><div class="card-title"><span class="vname">${v.name}</span><span class="status">${v.status}</span></div><div class="station">${v.lines.map(lineBadge).join("")}<span>${v.station}${v.walkMinutes?` · 도보 ${v.walkMinutes}분`:""}</span></div><div class="estimate"><small>${appliedGuests(v)}명 적용 예상 비용 · 옵션 제외</small><strong>${short(estimate(v))}</strong><div class="price-sub">대관 ${short(v.rental)} + 식대 ${fmt(v.mealCost)} × ${appliedGuests(v)}명</div></div><div class="badges"><span class="badge ${v.mood==="밝음"?"good":""}">${v.mood}</span><span class="badge">${v.meal}</span><span class="badge warn">${v.interval}분 간격</span><span class="badge info">주차 ${v.parking??"확인 필요"}${v.parking?"대":""}</span></div><div class="actions"><button class="btn primary detail-btn" data-name="${v.name}">상세보기</button><button class="btn compare-btn ${selected.has(v.name)?"selected":""}" data-name="${v.name}">${selected.has(v.name)?"비교함에서 빼기":"비교하기"}</button></div></div></article>`}
+function renderList(){const f=venues.filter(matches),groups={};f.forEach(v=>(groups[v.gu]??=[]).push(v));const root=document.getElementById("listRoot");root.innerHTML=Object.keys(groups).length?Object.entries(groups).map(([gu,vs])=>`<section class="section"><div class="section-head"><h2>${gu}</h2><span class="count">${vs.length}곳</span></div><div class="grid">${vs.map(card).join("")}</div></section>`).join(""):`<div class="empty-note">조건에 맞는 웨딩홀이 없습니다.</div>`;root.querySelectorAll(".detail-btn").forEach(b=>b.onclick=()=>openDetail(venues.find(v=>v.name===b.dataset.name)));root.querySelectorAll(".compare-btn").forEach(b=>b.onclick=()=>toggleCompare(b.dataset.name));applyMarkerVisibility()}
+function gallery(v){const arr=[v.image,...v.photos].filter(Boolean).slice(0,5);return `<div class="detail-gallery">${[0,1,2,3,4].map((_,i)=>`<div class="gallery-item">${arr[i]?`<img src="${arr[i]}" alt="${v.name} 사진 ${i+1}">`:`사진 ${i+1} 준비 중`}</div>`).join("")}</div>`}
+function fact(label,value){return `<div class="fact"><span>${label}</span><span>${value}</span></div>`}
+function openDetail(v){const d=document.getElementById("detailDialog");d.innerHTML=`<div class="modal-head"><div><h2 id="detailTitle">${v.name}</h2><div class="source-note">${v.address}</div></div><button class="close" data-close="detailModal" aria-label="닫기">×</button></div>${gallery(v)}<div class="detail-body"><div class="summary-grid">${[["예상 비용",short(estimate(v))],["대관료",short(v.rental)],["식대",fmt(v.mealCost)],["보증 인원",v.guarantee+"명"],["역 접근",v.walkMinutes?`도보 ${v.walkMinutes}분`:"확인 필요"],["주차",v.parking?v.parking+"대":"확인 필요"],["예식 간격",v.interval+"분"],["홀 운영",v.exclusiveHall==null?"확인 필요":v.exclusiveHall?"단독홀":"복수홀"]].map(x=>`<div class="summary"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join("")}</div><section class="detail-section"><h3>비용 및 계약 기준</h3><div class="facts">${fact("예상 비용 산식",`${short(v.rental)} + ${fmt(v.mealCost)} × ${appliedGuests(v)}명`)}${fact("옵션 포함 여부","필수·선택 옵션 제외")}${fact("최소 보증 인원",v.guarantee+"명")}${fact("최대 수용 인원",v.capacity?v.capacity+"명":"확인 필요")}${fact("최근 확인일",val(v.lastChecked))}${fact("예식 시간",v.times.length?v.times.join(", "):"확인 필요")}</div></section><section class="detail-section"><h3>교통·주차·운영</h3><div class="facts">${fact("지하철",v.lines.join(", ")+" · "+v.station)}${fact("역 도보",v.walkMinutes?v.walkMinutes+"분":"확인 필요")}${fact("주차 가능",v.parking?v.parking+"대":"확인 필요")}${fact("무료 주차",val(v.parkingFree))}${fact("셔틀버스",yesno(v.shuttle))}${fact("동시 예식",v.simultaneousWeddings?v.simultaneousWeddings+"건":"확인 필요")}${fact("홀 분위기",v.mood)}${fact("식사 형태",v.meal)}</div></section><section class="detail-section"><h3>장점과 확인할 점</h3><div class="pros"><div class="note-box"><strong>장점</strong>\n${v.pros.length?v.pros.map(x=>"• "+x).join("\n"):"아직 기록된 내용이 없습니다."}</div><div class="note-box"><strong>확인할 점</strong>\n${v.cautions.length?v.cautions.map(x=>"• "+x).join("\n"):"아직 기록된 내용이 없습니다."}</div></div></section><section class="detail-section"><h3>상담·방문 메모</h3><div class="note-box">${v.memo||"아직 기록된 메모가 없습니다."}</div></section><p class="source-note">가격과 운영 조건은 실제 상담 시 다시 확인하세요. 이미지에는 직접 촬영했거나 이용 허가를 받은 자료만 사용하는 것을 권장합니다.</p></div>`;document.getElementById("detailModal").classList.add("open");d.querySelector("[data-close]").onclick=closeModals}
+function toggleCompare(name){if(selected.has(name))selected.delete(name);else{if(selected.size>=3){alert("비교는 최대 3곳까지 가능합니다.");return}selected.add(name)}renderAll();renderCompareBar()}
+function renderCompareBar(){const bar=document.getElementById("compareBar");bar.classList.toggle("show",selected.size>0);document.getElementById("compareCount").textContent=selected.size+"곳 선택";document.getElementById("compareNames").textContent=[...selected].join(" · ")}
+const compareRows=[["예상 비용",v=>short(estimate(v))],["적용 인원",v=>appliedGuests(v)+"명"],["대관료",v=>short(v.rental)],["식대",v=>fmt(v.mealCost)],["보증 인원",v=>v.guarantee+"명"],["역",v=>v.station],["역 도보",v=>v.walkMinutes?v.walkMinutes+"분":"확인 필요"],["주차",v=>v.parking?v.parking+"대":"확인 필요"],["예식 간격",v=>v.interval+"분"],["홀 분위기",v=>v.mood],["식사",v=>v.meal],["단독홀",v=>yesno(v.exclusiveHall)],["상태",v=>v.status]];
+function openCompare(){const vs=venues.filter(v=>selected.has(v.name));document.getElementById("compareContent").innerHTML=vs.length?`<table class="compare-table"><thead><tr><th>비교 항목</th>${vs.map(v=>`<th>${v.name}</th>`).join("")}</tr></thead><tbody>${compareRows.map(([l,f])=>`<tr><td>${l}</td>${vs.map(v=>`<td>${f(v)}</td>`).join("")}</tr>`).join("")}</tbody></table><p class="source-note">예상 비용은 대관료와 식대만 포함하며 필수·선택 옵션은 제외합니다.</p>`:"비교할 웨딩홀을 선택해주세요.";document.getElementById("compareModal").classList.add("open")}
+function closeModals(){document.querySelectorAll(".modal").forEach(m=>m.classList.remove("open"))}document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeModals);document.querySelectorAll(".modal").forEach(m=>m.onclick=e=>{if(e.target===m)closeModals()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModals()});document.getElementById("openCompare").onclick=openCompare;
+document.getElementById("guestCount").addEventListener("change",e=>{guestCount=Math.max(50,Math.min(2000,+e.target.value||250));e.target.value=guestCount;renderAll()});
+let map=null;if(window.kakao?.maps){const container=document.getElementById("map");map=new kakao.maps.Map(container,{center:new kakao.maps.LatLng(37.515,127.02),level:8});const geocoder=new kakao.maps.services.Geocoder(),bounds=new kakao.maps.LatLngBounds();let pending=venues.length;venues.forEach(v=>geocoder.addressSearch(v.address,(result,status)=>{if(status===kakao.maps.services.Status.OK){const pos=new kakao.maps.LatLng(result[0].y,result[0].x),marker=new kakao.maps.Marker({position:pos,map}),info=new kakao.maps.InfoWindow({content:`<div class="info-window"><strong>${v.name}</strong><span>${v.station} · 예상 ${short(estimate(v))}</span></div>`});kakao.maps.event.addListener(marker,"click",()=>{if(activeInfo)activeInfo.close();info.open(map,marker);activeInfo=info});markerEntries.push({v,marker,pos});bounds.extend(pos)}if(--pending===0){if(!bounds.isEmpty())map.setBounds(bounds);document.getElementById("mapLoading").classList.add("hidden")}applyMarkerVisibility()}))}else document.getElementById("mapLoading").textContent="지도를 불러오지 못했습니다.";
+function applyMarkerVisibility(){markerEntries.forEach(x=>x.marker.setMap(matches(x.v)?map:null))}function renderAll(){renderControls();renderKpis();renderList();renderCompareBar()}renderAll();
 </script>
 </body>
 </html>
